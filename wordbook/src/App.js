@@ -1,32 +1,10 @@
-// import logo from './logo.svg';
-// import './App.css';
-// import React from 'react'
-// import ReactPlayer from 'react-player/lazy'
-
-// function App() {
-//   return (
-//     <div className="App">
-//       <header className="App-header">
-//       <ReactPlayer url='https://www.youtube.com/watch?v=Q8Sq9r50gc0'/>
- 
-//       </header>
-//     </div>
-//   );
-// }
-
-// export default App;
-
 import React, { Component } from 'react'
 import ReactPlayer from 'react-player/lazy'
 import Duration from './Duration'
 
 class App extends Component {
   state = {
-    url: null,
-    pip: false,
-    playing: true,
-    controls: false,
-    light: false,
+    playing: false,
     volume: 0.8,
     muted: false,
     played: 0,
@@ -34,15 +12,15 @@ class App extends Component {
     duration: 0,
     currentText:"",
     playbackRate: 1.0,
-    loop: false,
     transcript: null
   }
 
+  //transcript
   parsJsonIntoDictionary=(json)=>
   {
-    console.log("parsing");
     var result = JSON.parse(JSON.stringify(json));
     var dict = {};
+    
     result.transcript.forEach(element => {
       var index = Math.floor(element.start/5);
       if(dict[index] == undefined)
@@ -55,19 +33,11 @@ class App extends Component {
       }
       
     });
-    console.log("parsed");
     this.transcript = dict;
-    console.log(dict);
-
   }
 
-  load = url => {
-    this.setState({
-      url,
-      played: 0,
-      loaded: 0,
-      currentText:""
-    })
+  parseJsonTranscript = () => {
+    // this is only for testing, should be removed from the codes
     var json = {
       "transcript": [
           {
@@ -481,11 +451,20 @@ class App extends Component {
    
   }
 
-  handleProgress = state => {
-    console.log('onProgress', state)
+  updateSubtitles = (currentTime)=>{
+    //this call should be removed as we must already have the transcripts when user submits the youtube link
+    this.parseJsonTranscript("");
     
+    if(this.transcript != undefined)
+    {
+      this.currentText = this.transcript[Math.floor(currentTime/5)]
+    }
+  }
+ // end of transcript
+
+  // controls
+  handleProgress = state => {
     this.updateSubtitles(state.playedSeconds)
-    // We only want to update time slider if we are not currently seeking
     if (!this.state.seeking) {
       this.setState(state)
       console.log(state.playedSeconds)
@@ -510,46 +489,56 @@ class App extends Component {
     this.setState({ duration })
   }
 
-  updateSubtitles = (currentTime)=>{
-    //this.currentText = this.transcript[Math.floor(currentTime/5)];
-    console.log("to be here");
-    this.load("");
-    console.log(this.transcrip);
-    console.log(Math.floor(currentTime/5));
-    if(this.transcript != undefined)
-    {
-
-      this.currentText = this.transcript[Math.floor(currentTime/5)]
-    }
+  handlePlay = () => {
+    console.log('onPlay')
+    this.setState({ playing: true })
   }
 
- 
+  handlePlayPause = () => {
+    this.setState({ playing: !this.state.playing })
+  }
+
+    handlePause = () => {
+    console.log('onPause')
+    this.setState({ playing: false })
+  }
+
+  handleVolumeChange = e => {
+    this.setState({ volume: parseFloat(e.target.value) })
+  }
 
   ref = player => {
     this.player = player
   }
+  //end of controls
 
   render () {
-    const { url, playing, controls, light, volume, muted, loop, played, loaded, duration, playbackRate, pip, transcript, currentText } = this.state
+    const { playing, volume, played, duration} = this.state
     return (
       <div className="App">
         <header className="App-header">
           <ReactPlayer 
           ref={this.ref}
             url='https://www.youtube.com/watch?v=Q8Sq9r50gc0'
-        
               playing={playing}
-              controls={controls}
-            
+              volume={volume}
               onSeek={e => console.log('onSeek', e)}
               onProgress={this.handleProgress}
               onDuration={this.handleDuration}
+              onPlay={this.handlePlay}
+              onPause={this.handlePause}
           />
  
         </header>
         <table>
           <tbody>
-          <tr>
+            <tr>
+                <th>Controls</th>
+                <td>
+                  <button onClick={this.handlePlayPause}>{playing ? 'Pause' : 'Play'}</button>
+                </td>
+            </tr>
+            <tr>
                 <th>Seek</th>
                 <td>
                   <input
@@ -561,10 +550,12 @@ class App extends Component {
                   />
                 </td>
               </tr>
-            <tr>
-              <th>played</th>
-              <td>{played.toFixed(3)}</td>
-            </tr>
+              <tr>
+                <th>Volume</th>
+                <td>
+                  <input type='range' min={0} max={1} step='any' value={volume} onChange={this.handleVolumeChange} />
+                </td>
+              </tr>
             <tr>
               <th>duration</th>
               <td><Duration seconds={duration} /></td>

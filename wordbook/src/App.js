@@ -6,12 +6,10 @@ class App extends Component {
   state = {
     playing: false,
     volume: 0.8,
-    muted: false,
     played: 0,
     loaded: 0,
     duration: 0,
     currentText:"",
-    playbackRate: 1.0,
     transcript: null
   }
 
